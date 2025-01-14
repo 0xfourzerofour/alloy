@@ -6,7 +6,7 @@ use crate::geth::{
 };
 use alloy_primitives::{Bytes, B256, U256};
 use alloy_rpc_types_eth::{state::StateOverride, BlockOverrides};
-use erc_7562::CallFrameWithOpCodes;
+use erc_7562::{CallFrameWithOpCodes, Erc7562ValidationTracerConfig};
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, time::Duration};
 // re-exports
@@ -375,6 +375,16 @@ impl GethDebugTracerConfig {
 
     /// Returns the [PreStateConfig] if it is a prestate config.
     pub fn into_pre_state_config(self) -> Result<PreStateConfig, serde_json::Error> {
+        if self.0.is_null() {
+            return Ok(Default::default());
+        }
+        self.from_value()
+    }
+
+    /// Returns the [Erc7562TracerConfig].
+    pub fn into_erc_7562_tracer_config(
+        self,
+    ) -> Result<Erc7562ValidationTracerConfig, serde_json::Error> {
         if self.0.is_null() {
             return Ok(Default::default());
         }
