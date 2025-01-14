@@ -6,6 +6,7 @@ use crate::geth::{
 };
 use alloy_primitives::{Bytes, B256, U256};
 use alloy_rpc_types_eth::{state::StateOverride, BlockOverrides};
+use erc_7562::CallFrameWithOpCodes;
 use serde::{de::DeserializeOwned, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, time::Duration};
 // re-exports
@@ -20,6 +21,7 @@ pub use self::{
 };
 
 pub mod call;
+pub mod erc_7562;
 pub mod four_byte;
 pub mod mux;
 pub mod noop;
@@ -124,6 +126,8 @@ pub enum GethTrace {
     FlatCallTracer(FlatCallFrame),
     /// The response for four byte tracer
     FourByteTracer(FourByteFrame),
+    /// The response for four byte tracer
+    Erc7562Tracer(CallFrameWithOpCodes),
     /// The response for pre-state byte tracer
     PreStateTracer(PreStateFrame),
     /// An empty json response
@@ -163,6 +167,16 @@ impl GethTrace {
     pub fn try_into_four_byte_frame(self) -> Result<FourByteFrame, UnexpectedTracerError> {
         match self {
             Self::FourByteTracer(inner) => Ok(inner),
+            _ => Err(UnexpectedTracerError(self)),
+        }
+    }
+
+    /// Try to convert the inner tracer to [Erc7562Tracer]
+    pub fn try_into_erc_7562_call_frame(
+        self,
+    ) -> Result<CallFrameWithOpCodes, UnexpectedTracerError> {
+        match self {
+            Self::Erc7562Tracer(inner) => Ok(inner),
             _ => Err(UnexpectedTracerError(self)),
         }
     }
@@ -215,6 +229,12 @@ impl From<DefaultFrame> for GethTrace {
 impl From<FourByteFrame> for GethTrace {
     fn from(value: FourByteFrame) -> Self {
         Self::FourByteTracer(value)
+    }
+}
+
+impl From<CallFrameWithOpCodes> for GethTrace {
+    fn from(value: CallFrameWithOpCodes) -> Self {
+        Self::Erc7562Tracer(value)
     }
 }
 
@@ -282,6 +302,9 @@ pub enum GethDebugBuiltInTracerType {
     /// The output is an object where the keys correspond to account addresses.
     #[serde(rename = "prestateTracer")]
     PreStateTracer,
+    /// Tracer for ERC 7562 validation of ERC 4337 user operations.
+    #[serde(rename = "erc7562Tracer")]
+    Erc7562Tracer,
     /// This tracer is noop. It returns an empty object and is only meant for testing the setup.
     #[serde(rename = "noopTracer")]
     NoopTracer,
