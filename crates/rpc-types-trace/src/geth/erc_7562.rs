@@ -12,20 +12,22 @@ use super::CallLogFrame;
 pub struct CallFrameWithOpCodes {
     /// Type of the call frame. Renamed to 'ty' for serialization due to 'type' being a reserved keyword in Rust.
     #[serde(default, rename = "type")]
-    pub ty: u8,
+    pub typ: String,
 
     /// Address of the caller.
     pub from: Address,
 
     /// Amount of gas provided for this call.
-    pub gas: u64,
+    #[serde(default)]
+    pub gas: U256,
 
     /// Gas consumed by this call. Renamed from 'gasUsed' for serialization.
     #[serde(default, rename = "gasUsed")]
-    pub gas_used: u64,
+    pub gas_used: U256,
 
     /// Address of the callee.
-    pub to: Address,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to: Option<Address>,
 
     /// Input data for the call.
     pub input: Bytes,
@@ -35,18 +37,20 @@ pub struct CallFrameWithOpCodes {
     pub output: Option<Bytes>,
 
     /// Error message if the call failed.
-    pub error: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 
     /// Reason for reversion if the call was reverted.
-    #[serde(default, rename = "revertReason")]
-    pub revert_reason: String,
+    #[serde(default, rename = "revertReason", skip_serializing_if = "Option::is_none")]
+    pub revert_reason: Option<String>,
 
     /// Logs emitted during this call, serialized only if not empty.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub logs: Vec<CallLogFrame>,
 
     /// Value transferred in wei.
-    pub value: U256,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<U256>,
 
     /// Whether a snapshot was reverted during this call.
     #[serde(default, rename = "revertedSnapshot")]
